@@ -1,0 +1,58 @@
+domains
+    string_list = string*
+
+predicates
+    nondeterm member(string, string_list)
+    nondeterm edge(string, string, integer)
+
+    nondeterm findpath(string, string, integer, string_list)
+    nondeterm path(string, string, string_list, integer, string_list)
+    nondeterm findminpath(string,string, integer, string_list)
+    
+database
+    solution(integer, string_list)
+
+clauses
+    member(X, [X | _]).
+    member(X, [_ | Tail]) :- member(X, Tail).
+
+    edge("a", "b", 1).
+    edge("b", "e", 2).
+    edge("a", "c", 3).
+    edge("c", "d", 2).
+    edge("e", "d", 3).
+    edge("d", "f", 2).
+    edge("d", "g", 3).
+
+    findpath(A, B, W, Steps) :- path(A, B, [], W, Steps).
+    
+    path(A, B, _, W, [A, B]) :- edge(A, B, W).
+    
+    path(A, B, V, W, [A | Steps1]) :- 
+        not(member(A, V)), 
+        edge(A, C, W1), 
+        path(C, B, [A | V], W2, Steps1),
+        W = W1 + W2.
+
+
+findminpath(A,B,W,Steps):-
+	not(solution(_,_)),
+	findpath(A,B,W1,Steps1),
+	assertz(solution(W1,Steps1)),
+	!,
+	findminpath(A,B,W,Steps).
+	
+findminpath(A,B,_,_):-
+	findpath(A,B,W1,Steps1),
+	solution(W2,Steps2),
+	W1 < W2,
+	retract(solution(W2,Steps2)),
+	asserta(solution(W1,Steps1)),
+	fail.
+	
+findminpath(_,_,W,Steps):-
+	solution(W,Steps),
+	retract(solution(W,Steps)).
+
+goal
+    findminpath("a", "d", W, Steps).
